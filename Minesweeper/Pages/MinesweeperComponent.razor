@@ -1,0 +1,155 @@
+﻿<h3>MinesweeperComponent</h3>
+@switch (selectedDifficulty)
+{
+	case Difficulty.NotSelected:
+		<div>
+			<h3>Select difficulty</h3>
+			<button @onclick="() => StartGame(Difficulty.Easy)">easy</button>
+			<button @onclick="() => StartGame(Difficulty.Medium)">medium</button>
+			<button @onclick="() => StartGame(Difficulty.Hard)">hard</button>
+		</div>
+		break;
+	case Difficulty.Easy:
+		<div>
+			<!--11 columns and 11 rows-->
+			@for (int k = 1; k < 12; k++)
+			{
+				<div class="row">
+					@for (int i = 1; i < 12; i++)
+					{
+						<div class="col">
+							<button class="btn btn-primary" id="@k-@i">0</button>
+						</div>
+					}
+				</div>
+			}
+		</div>
+		break;
+	case Difficulty.Medium:
+		<div>
+			<!--12 columns 12-->
+			@for (int k = 1; k < 13; k++)
+			{
+				<div class="row">
+					@for (int i = 1; i < 13; i++)
+					{
+						<div class="col">
+							<button class="btn btn-primary" id="@k-@i">0</button>
+						</div>
+					}
+				</div>
+			}
+		</div>
+		break;
+	case Difficulty.Hard:
+		<div>
+			<!--14 clumns 14 rows-->
+			@for (int k = 1; k < 15; k++)
+			{
+				<div class="row">
+					@for (int i = 1; i < 15; i++)
+					{
+						<div class="col">
+							<button class="btn btn-primary" id="@k-@i">0</button>
+						</div>
+					}
+				</div>
+			}
+		</div>
+		break;
+}
+
+
+@code {
+	enum Difficulty
+	{
+		NotSelected,
+		Easy,
+		Medium,
+		Hard
+	}
+	List<Field> fields = new List<Field>();
+	List<Field> bombFields = new List<Field>();
+	private Difficulty selectedDifficulty = Difficulty.NotSelected;
+	private async Task StartGame(Difficulty difficulty)
+	{
+		selectedDifficulty = difficulty;
+
+		switch (difficulty)
+		{
+			case Difficulty.Easy:
+				fields = Enumerable.Range(1, 11).SelectMany(k => Enumerable.Range(1, 11).Select(i => 
+					new Field {ID = k + "-" + i, Xindex = k, Yindex = i, IsMine = false, State = Field.FieldState.Hidden }))
+				.ToList();
+				CreateBombs(difficulty, fields);
+				break;
+			case Difficulty.Medium:
+				fields = Enumerable.Range(1, 12).SelectMany(k => Enumerable.Range(1, 12).Select(i => 
+					new Field { ID = k + "-" + i, Xindex = k, Yindex = i, IsMine = false, State = Field.FieldState.Hidden }))
+				.ToList();
+				CreateBombs(difficulty, fields);
+				break;
+			case Difficulty.Hard:
+				fields = Enumerable.Range(1, 14).SelectMany(k => Enumerable.Range(1, 14).Select(i => 
+					new Field { ID = k + "-" + i, Xindex = k, Yindex = i, IsMine = false, State = Field.FieldState.Hidden }))
+				.ToList();
+				CreateBombs(difficulty, fields);
+				break;
+			default:
+				break;
+		}
+		FindMinesInAdjacentFields(fields);
+
+	}
+	private void CreateBombs(Difficulty difficulty, List<Field> filds)
+	{
+		int bombCount = 0;
+		int maxIndex = 0;
+		switch (difficulty)
+		{
+			case Difficulty.Easy:
+				bombCount = 10;
+				maxIndex = 12; // 11 columns and 11 rows
+				break;
+			case Difficulty.Medium:
+				bombCount = 15;
+				maxIndex = 13; // 12 columns and 12 rows
+				break;
+			case Difficulty.Hard:
+				bombCount = 30;
+				maxIndex = 15; // 14 columns and 14 rows
+				break;
+		}
+		var random = new Random();
+		while (bombFields.Count < bombCount)
+		{
+			int index1 = random.Next(1, maxIndex);
+			int index2 = random.Next(1, maxIndex);
+			if (!bombFields.Any(x => x.ID == index1 + "-" + index2))
+			{
+				bombFields.Add(new Field{ ID = index1 + "-" + index2, IsMine = true, Xindex = index1, Yindex = index2});
+			}
+		}
+	}
+	private void FindMinesInAdjacentFields(List<Field> fields)
+	{
+		int count = 0;
+		foreach(var i in fields)
+		{
+			if (i.IsMine)
+			{
+				continue;
+			}
+			if (fields.Any(x => x.Xindex == i.Xindex - 1 && x.Yindex == i.Yindex - 1 && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex && x.Yindex == i.Yindex - 1 && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex + 1 && x.Yindex == i.Yindex - 1 && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex + 1 && x.Yindex == i.Yindex && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex - 1 && x.Yindex == i.Yindex + 1 && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex && x.Yindex == i.Yindex + 1 && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex + 1 && x.Yindex == i.Yindex + 1 && x.IsMine)) { count++; }
+			if (fields.Any(x => x.Xindex == i.Xindex - 1 && x.Yindex == i.Yindex && x.IsMine)) { count++; }
+
+			i.AdjacentMines = count;
+		}
+	}
+}
