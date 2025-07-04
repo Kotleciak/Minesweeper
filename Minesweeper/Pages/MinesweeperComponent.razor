@@ -10,48 +10,77 @@
 		</div>
 		break;
 	case Difficulty.Easy:
-		<div>
+		<div class="GameBoard">
 			<!--11 columns and 11 rows-->
 			@for (int k = 1; k < 12; k++)
 			{
-				<div class="row">
+				<div class="row GridRow" style="height: 6.63%;">
 					@for (int i = 1; i < 12; i++)
 					{
-						<div class="col">
-							<button class="btn btn-primary" id="@k-@i">0</button>
-						</div>
+						int x = k;
+						int y = i;
+						if((k + i) % 2 == 0)
+						{
+							<div class="col GridColumn">
+								<button class="FieldButton" id="@k-@i" style="background-color: darkolivegreen" @onclick='() => RevealField(x + "-" + y)'></button>
+							</div>
+						}
+						else
+						{
+							<div class="col GridColumn">
+								<button class="FieldButton" id="@k-@i" style="background-color:forestgreen" @onclick='() => RevealField(x + "-" + y)'></button>
+							</div>
+						}
 					}
 				</div>
 			}
 		</div>
 		break;
 	case Difficulty.Medium:
-		<div>
+		<div class="GameBoard">
 			<!--12 columns 12-->
 			@for (int k = 1; k < 13; k++)
 			{
-				<div class="row">
+				<div class="row GridRow" style="height: 5.83%;">
 					@for (int i = 1; i < 13; i++)
 					{
-						<div class="col">
-							<button class="btn btn-primary" id="@k-@i">0</button>
-						</div>
+						if ((k + i) % 2 == 0)
+						{
+							<div class="col GridColumn">
+								<button class="FieldButton" id="@k-@i" style="background-color: darkolivegreen" @onclick='() => RevealField(k + "-" + i)'></button>
+							</div>
+						}
+						else
+						{
+							<div class="col GridColumn">
+								<button class="FieldButton" id="@k-@i" style="background-color:forestgreen" @onclick='() => RevealField(k + "-" + i)'></button>
+							</div>
+						}
 					}
 				</div>
 			}
 		</div>
 		break;
 	case Difficulty.Hard:
-		<div>
+		<div class="GameBoard">
 			<!--14 clumns 14 rows-->
 			@for (int k = 1; k < 15; k++)
 			{
-				<div class="row">
+				<div class="row GridRow" style="height: 5%;">
 					@for (int i = 1; i < 15; i++)
 					{
-						<div class="col">
-							<button class="btn btn-primary" id="@k-@i">0</button>
-						</div>
+						if ((k + i) % 2 == 0)
+						{
+							<div class="col GridColumn">
+								<button class="FieldButton" id="@k-@i" style="background-color: darkolivegreen" @onclick='() => RevealField(k + "-" + i)'></button>
+							</div>
+						}
+						else
+						{
+							<div class="col GridColumn">
+								<button class="FieldButton" id="@k-@i" style="background-color:forestgreen" @onclick='() => RevealField(k + "-" + i)'></button>
+							</div>
+						}
 					}
 				</div>
 			}
@@ -70,6 +99,7 @@
 	}
 	List<Field> fields = new List<Field>();
 	List<Field> bombFields = new List<Field>();
+	List<Field> fieldsToShowUp = new List<Field>();
 	private Difficulty selectedDifficulty = Difficulty.NotSelected;
 	private async Task StartGame(Difficulty difficulty)
 	{
@@ -151,5 +181,21 @@
 
 			i.AdjacentMines = count;
 		}
+	}
+	private async Task RevealField(string id)
+	{
+		Field clickedField = fields.FirstOrDefault(x => x.ID == id);
+		Field rightField = fields.FirstOrDefault(x => x.Xindex == clickedField.Xindex + 1 && x.Yindex == clickedField.Yindex);
+		if (fields.Any(x => x == rightField) != null && rightField.AdjacentMines < 1 && fieldsToShowUp.Any(x => x == rightField) == null)
+		{
+			fieldsToShowUp.Add(rightField);
+			await RevealField(rightField.ID);
+		}
+		Test();
+		//yeee I will fix it in the future
+	}
+	private void Test()
+	{
+		
 	}
 }
