@@ -12,7 +12,7 @@
 	case Difficulty.Easy:
 		<div class="GameBoard">
 			<!--11 columns and 11 rows-->
-			@for (int k = 1; k < 12; k++)
+			@for (int k = 11; k > 0; k--)
 			{
 				<div class="row GridRow" style="height: 6.63%;">
 					@for (int i = 1; i < 12; i++)
@@ -22,13 +22,13 @@
 						if((k + i) % 2 == 0)
 						{
 							<div class="col GridColumn">
-								<button class="FieldButton" id="@k-@i" style="background-color: darkolivegreen" @onclick='() => RevealField(x + "-" + y)'></button>
+								<button class="FieldButton" id="@i-@k" style="background-color: darkolivegreen" @onclick='() => RevealField(y + "-" + x)'></button>
 							</div>
 						}
 						else
 						{
 							<div class="col GridColumn">
-								<button class="FieldButton" id="@k-@i" style="background-color:forestgreen" @onclick='() => RevealField(x + "-" + y)'></button>
+								<button class="FieldButton" id="@i-@k" style="background-color:forestgreen" @onclick='() => RevealField(y + "-" + x)'></button>
 							</div>
 						}
 					}
@@ -39,21 +39,23 @@
 	case Difficulty.Medium:
 		<div class="GameBoard">
 			<!--12 columns 12-->
-			@for (int k = 1; k < 13; k++)
+			@for (int k = 13; k > 0; k--)
 			{
 				<div class="row GridRow" style="height: 5.83%;">
 					@for (int i = 1; i < 13; i++)
 					{
+						int x = k;
+						int y = i;
 						if ((k + i) % 2 == 0)
 						{
 							<div class="col GridColumn">
-								<button class="FieldButton" id="@k-@i" style="background-color: darkolivegreen" @onclick='() => RevealField(k + "-" + i)'></button>
+								<button class="FieldButton" id="@i-@k" style="background-color: darkolivegreen" @onclick='() => RevealField(y + "-" + x)'></button>
 							</div>
 						}
 						else
 						{
 							<div class="col GridColumn">
-								<button class="FieldButton" id="@k-@i" style="background-color:forestgreen" @onclick='() => RevealField(k + "-" + i)'></button>
+								<button class="FieldButton" id="@i-@k" style="background-color:forestgreen" @onclick='() => RevealField(y + "-" + x)'></button>
 							</div>
 						}
 					}
@@ -64,21 +66,23 @@
 	case Difficulty.Hard:
 		<div class="GameBoard">
 			<!--14 clumns 14 rows-->
-			@for (int k = 1; k < 15; k++)
+			@for (int k = 14; k > 0; k--)
 			{
 				<div class="row GridRow" style="height: 5%;">
 					@for (int i = 1; i < 15; i++)
 					{
+						int x = k;
+						int y = i;
 						if ((k + i) % 2 == 0)
 						{
 							<div class="col GridColumn">
-								<button class="FieldButton" id="@k-@i" style="background-color: darkolivegreen" @onclick='() => RevealField(k + "-" + i)'></button>
+								<button class="FieldButton" id="@i-@k" style="background-color: darkolivegreen" @onclick='() => RevealField(y + "-" + x)'></button>
 							</div>
 						}
 						else
 						{
 							<div class="col GridColumn">
-								<button class="FieldButton" id="@k-@i" style="background-color:forestgreen" @onclick='() => RevealField(k + "-" + i)'></button>
+								<button class="FieldButton" id="@i-@k" style="background-color:forestgreen" @onclick='() => RevealField(y + "-" + x)'></button>
 							</div>
 						}
 					}
@@ -128,7 +132,7 @@
 			default:
 				break;
 		}
-		FindMinesInAdjacentFields(fields);
+		FindMinesInAdjacentFields();
 
 	}
 	private void CreateBombs(Difficulty difficulty, List<Field> filds)
@@ -138,11 +142,11 @@
 		switch (difficulty)
 		{
 			case Difficulty.Easy:
-				bombCount = 10;
+				bombCount = 15;
 				maxIndex = 12; // 11 columns and 11 rows
 				break;
 			case Difficulty.Medium:
-				bombCount = 15;
+				bombCount = 20;
 				maxIndex = 13; // 12 columns and 12 rows
 				break;
 			case Difficulty.Hard:
@@ -158,10 +162,11 @@
 			if (!bombFields.Any(x => x.ID == index1 + "-" + index2))
 			{
 				bombFields.Add(new Field{ ID = index1 + "-" + index2, IsMine = true, Xindex = index1, Yindex = index2});
+				fields.FirstOrDefault(x => x.ID == index1 + "-" + index2).IsMine = true; // set the mine in the main fields list
 			}
 		}
 	}
-	private void FindMinesInAdjacentFields(List<Field> fields)
+	private void FindMinesInAdjacentFields()
 	{
 		int count = 0;
 		foreach(var i in fields)
@@ -180,19 +185,20 @@
 			if (fields.Any(x => x.Xindex == i.Xindex - 1 && x.Yindex == i.Yindex && x.IsMine)) { count++; }
 
 			i.AdjacentMines = count;
+			Console.WriteLine($"Field {i.ID} has {i.AdjacentMines} adjacent mines.");
+			count = 0; // reset count for next field
 		}
 	}
 	private async Task RevealField(string id)
 	{
 		Field clickedField = fields.FirstOrDefault(x => x.ID == id);
 		Field rightField = fields.FirstOrDefault(x => x.Xindex == clickedField.Xindex + 1 && x.Yindex == clickedField.Yindex);
-		if (fields.Any(x => x == rightField) != null && rightField.AdjacentMines < 1 && fieldsToShowUp.Any(x => x == rightField) == null)
+		if (fields.Any(x => x == rightField) != null && rightField.AdjacentMines < 1 && fieldsToShowUp.FirstOrDefault(x => x == rightField) == null)
 		{
 			fieldsToShowUp.Add(rightField);
 			await RevealField(rightField.ID);
-		}
+		}//This if statement wasn's working so i fixed that but still don't work
 		Test();
-		//yeee I will fix it in the future
 	}
 	private void Test()
 	{
