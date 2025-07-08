@@ -40,7 +40,7 @@
 	case Difficulty.Medium:
 		<div class="GameBoard">
 			<!--12 columns 12-->
-			@for (int k = 13; k > 0; k--)
+			@for (int k = 12; k > 0; k--)
 			{
 				<div class="row GridRow" style="height: 5.83%;">
 					@for (int i = 1; i < 13; i++)
@@ -94,23 +94,36 @@
 }
 <script>
 	window.setAsFlagged = function(ID) {
-		event.preventDefault(); // Prevent the default context menu from appearing
-		if(document.getElementById(ID).hasChildNodes())
-		{
-			document.getElementById(ID).innerHTML = "";
-		}
-		else
-		{
-			let image = document.createElement("img");
-			image.src = "/Flag.png";
-			image.style.width = "30px"; // Set the width of the flag image
-			image.style.height = "30px"; // Set the height of the flag image
-			document.getElementById(ID).appendChild(image);
-		}
+	event.preventDefault(); // Prevent the default context menu from appearing
+	if(document.getElementById(ID).hasChildNodes())
+	{
+	document.getElementById(ID).innerHTML = "";
+	}
+	else
+	{
+	let image = document.createElement("img");
+	image.src = "/Flag.png";
+	image.style.width = "30px"; // Set the width of the flag image
+	image.style.height = "30px"; // Set the height of the flag image
+	document.getElementById(ID).appendChild(image);
+	}
 	}
 	window.GameLost = function() {
-		alert("You lost the game!");
+	alert("You lost the game!");
 	}
+	window.revealFields = function(list) {
+	console.log("Otrzymano listę:", list);
+	list.forEach(x => {
+	console.log("Sprawdzam ID:", x.id);
+	let item = document.getElementById(x.id);
+	if (item) {
+	item.style.backgroundColor = "gray";
+	item.innerText = x.adjacentMines
+	} else {
+	console.warn("Nie znaleziono elementu o ID:", x.id);
+	}
+	});
+	};
 </script>
 
 
@@ -211,55 +224,79 @@
 			count = 0; // reset count for next field
 		}
 	}
-	private void ButtonClicked(string id)
+	private async Task ButtonClicked(string id)
 	{
 		var clickedField = fields.FirstOrDefault(x => x.ID == id);
 		if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines > 0 && !clickedField.IsMine)
 		{
-			//I will come back to this later(tomorrow))
+			fieldsToShowUp.Add(clickedField);
+			await RevealFields();
 		}
-		else if(clickedField.State == Field.FieldState.Hidden && clickedField.IsMine)
+		else if (clickedField.State == Field.FieldState.Hidden && clickedField.IsMine)
 		{
 			GameLost();
 		}
 		else if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines == 0 && !clickedField.IsMine)
 		{
 			fieldsToShowUp.Add(clickedField);
-			RevealField(clickedField.ID);
+			await GetFieldsToReveal(clickedField.ID);
+			await RevealFields();
+		}
+		else if (clickedField.State == Field.FieldState.Revealed && clickedField.AdjacentMines > 0)
+		{
+			//reveal the field with the number of adjacent mines
 		}
 	}
-	private async Task RevealField(string id)
+	private async Task GetFieldsToReveal(string id)
 	{
 		Field clickedField = fields.FirstOrDefault(x => x.ID == id);
-		Field rightField = fields.FirstOrDefault(x => x.Xindex == clickedField.Xindex + 1 && x.Yindex == clickedField.Yindex);
-		if (fields.Any(x => x == rightField) != null && rightField.AdjacentMines < 1 && fieldsToShowUp.FirstOrDefault(x => x == rightField) == null && !rightField.IsMine)
+		if (clickedField == null)
 		{
-			fieldsToShowUp.Add(rightField);
-			await RevealField(rightField.ID);
+			Console.WriteLine("clickedField is null! Invalid ID?");
+			return;
 		}
-		Field leftField = fields.FirstOrDefault(x => x.Xindex == clickedField.Xindex - 1 && x.Yindex == clickedField.Yindex);
-		if (fields.Any(x => x == leftField) != null && leftField.AdjacentMines < 1 && fieldsToShowUp.FirstOrDefault(x => x == leftField) == null && !leftField.IsMine)
-		{
-			fieldsToShowUp.Add(leftField);
-			await RevealField(leftField.ID);
-		}
-		Field upField = fields.FirstOrDefault(x => x.Xindex == clickedField.Xindex && x.Yindex == clickedField.Yindex + 1);
-		if (fields.Any(x => x == upField) != null && upField.AdjacentMines < 1 && fieldsToShowUp.FirstOrDefault(x => x == upField) == null && !upField.IsMine)
-		{
-			fieldsToShowUp.Add(upField);
-			await RevealField(upField.ID);
-		}
-		Field downField = fields.FirstOrDefault(x => x.Xindex == clickedField.Xindex && x.Yindex == clickedField.Yindex - 1);
-		if (fields.Any(x => x == downField) != null && downField.AdjacentMines < 1 && fieldsToShowUp.FirstOrDefault(x => x == downField) == null && !downField.IsMine)
-		{
-			fieldsToShowUp.Add(downField);
-			await RevealField(downField.ID);
-		}//This if statement wasn's working so i fixed that but still don't work
-		Test();
-	}
-	private void Test()
-	{
 
+		// Lista kierunków: (X, Y)
+		var directions = new (int dx, int dy)[]
+		{
+		(1, 0),   // right
+        (-1, 0),  // left
+        (0, 1),   // up
+        (0, -1),  // down
+		};
+
+		foreach (var (dx, dy) in directions)
+		{
+			var neighbor = fields.FirstOrDefault(x =>
+				x.Xindex == clickedField.Xindex + dx &&
+				x.Yindex == clickedField.Yindex + dy
+			);
+
+			if (neighbor == null)
+				continue;
+
+			if (!fieldsToShowUp.Contains(neighbor) && !neighbor.IsMine && neighbor.State != Field.FieldState.Flagged)
+			{
+				fieldsToShowUp.Add(neighbor);
+
+				if (neighbor.AdjacentMines < 1)
+				{
+					await GetFieldsToReveal(neighbor.ID);
+				}
+			}
+		}
+	}
+
+	private async Task RevealFields()
+	{
+		StateHasChanged();
+		await Task.Yield(); // Ensure the UI updates before invoking JS
+		await JS.InvokeVoidAsync("revealFields", fieldsToShowUp);
+		foreach (var field in fieldsToShowUp)
+		{
+			fields.FirstOrDefault(x => x.ID == field.ID).State = Field.FieldState.Revealed;
+		}
+		fieldsToShowUp.Clear();
 	}
 	private async Task SetAFlag(string id)
 	{
