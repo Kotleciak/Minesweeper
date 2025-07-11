@@ -116,9 +116,39 @@
 	list.forEach(x => {
 	console.log("Sprawdzam ID:", x.id);
 	let item = document.getElementById(x.id);
+	let number = document.createElement("p");
 	if (item) {
 	item.style.backgroundColor = "gray";
-	item.innerText = x.adjacentMines
+	number.innerText = x.adjacentMines
+	number.classList.add("AdjectedMinesText");
+	switch (x.adjacentMines)
+	{
+	case 1:
+	number.style.color = "blue";
+	break;
+	case 2:
+	number.style.color = "green";
+	break;
+	case 3:
+	number.style.color = "red";
+	break;
+	case 4:
+	number.style.color = "purple";
+	break;
+	case 5:
+	number.style.color = "yellow";
+	break;
+	case 6:
+	number.style.color = "orange";
+	break;
+	default:
+	number.style.color = "black";
+	break;
+	}
+	if(x.adjacentMines > 0)
+	{
+	item.appendChild(number);
+	}
 	} else {
 	console.warn("Nie znaleziono elementu o ID:", x.id);
 	}
@@ -244,7 +274,26 @@
 		}
 		else if (clickedField.State == Field.FieldState.Revealed && clickedField.AdjacentMines > 0)
 		{
-			//reveal the field with the number of adjacent mines
+			if(FindeNearbyMines(clickedField) == clickedField.AdjacentMines)
+			{
+				bool loose = false;
+				GetNeighbourFieldsToShowUp(clickedField);
+				foreach (var x in fieldsToShowUp)
+				{
+					if (x.IsMine)
+					{
+						loose = true;
+					}
+				}
+				if (loose)
+				{
+					GameLost();
+				}
+				else
+				{
+					await RevealFields();
+				}
+			}
 		}
 	}
 	private async Task GetFieldsToReveal(string id)
@@ -256,13 +305,16 @@
 			return;
 		}
 
-		// Lista kierunków: (X, Y)
 		var directions = new (int dx, int dy)[]
 		{
 		(1, 0),   // right
         (-1, 0),  // left
         (0, 1),   // up
         (0, -1),  // down
+		(-1, -1), // up-left
+		(-1, 1),  // down-left
+		(1, -1),  // up-right
+		(1, 1)    // down-right)
 		};
 
 		foreach (var (dx, dy) in directions)
@@ -275,7 +327,7 @@
 			if (neighbor == null)
 				continue;
 
-			if (!fieldsToShowUp.Contains(neighbor) && !neighbor.IsMine && neighbor.State != Field.FieldState.Flagged)
+			if (!fieldsToShowUp.Contains(neighbor) && !neighbor.IsMine && neighbor.State == Field.FieldState.Hidden)
 			{
 				fieldsToShowUp.Add(neighbor);
 
@@ -316,5 +368,57 @@
 	{
 		JS.InvokeVoidAsync("GameLost");
 		selectedDifficulty = Difficulty.NotSelected;
+	}
+	private void GetNeighbourFieldsToShowUp(Field clickField)
+	{
+		var directions = new (int dx, int dy)[]
+		{
+		(1, 0),   // right
+        (-1, 0),  // left
+        (0, 1),   // up
+        (0, -1),  // down
+		(-1, -1), // up-left
+		(-1, 1),  // down-left
+		(1, -1),  // up-right
+		(1, 1)    // down-right)
+		};
+		foreach (var (dx, dy) in directions)
+		{
+			var neighbour = fields.FirstOrDefault(x =>
+				x.Xindex == clickField.Xindex + dx &&
+				x.Yindex == clickField.Yindex + dy
+			);
+			if(neighbour.State == Field.FieldState.Hidden)
+			{
+				fieldsToShowUp.Add(neighbour);
+			}
+		}
+	}
+	private int FindeNearbyMines(Field clickedField)
+	{
+		int nearbyMinesCount = 0;
+		var directions = new (int dx, int dy)[]
+		{
+		(1, 0),   // right
+        (-1, 0),  // left
+        (0, 1),   // up
+        (0, -1),  // down
+		(-1, -1), // up-left
+		(-1, 1),  // down-left
+		(1, -1),  // up-right
+		(1, 1)    // down-right)
+		};
+		foreach (var (dx, dy) in directions)
+		{
+			var neighbour = fields.FirstOrDefault(x =>
+				x.Xindex == clickedField.Xindex + dx &&
+				x.Yindex == clickedField.Yindex + dy
+			);
+			if (neighbour != null && neighbour.State == Field.FieldState.Flagged)
+			{
+				nearbyMinesCount++;
+			}
+		}
+		return nearbyMinesCount;
 	}
 }

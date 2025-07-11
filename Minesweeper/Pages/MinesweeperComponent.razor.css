@@ -6,11 +6,14 @@
 }
 .GameBoard {
     gap: 0 !important;
-    height: 100vh;
+    height: 100%;
 }
 .GridColumn {
     padding: 0 !important;
 }
 .GridRow {
     height: stretch !important;
+}
+.AdjectedMinesText{
+    font-family: "Jersey 20"
 }
