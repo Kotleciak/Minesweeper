@@ -118,7 +118,19 @@
 	let item = document.getElementById(x.id);
 	let number = document.createElement("p");
 	if (item) {
+	let i = item.id;
+	let parts = i.split("-");
+	let xIndex = parseInt(parts[0]);
+	let yIndex = parseInt(parts[1]);
 	item.style.backgroundColor = "gray";
+	if((xIndex + yIndex) % 2 == 0)
+	{
+	item.style.backgroundColor = "gray";
+	}
+	else
+	{
+	item.style.backgroundColor = "lightgray";
+	}
 	number.innerText = x.adjacentMines
 	number.classList.add("AdjectedMinesText");
 	switch (x.adjacentMines)
@@ -145,7 +157,7 @@
 	number.style.color = "black";
 	break;
 	}
-	if(x.adjacentMines > 0)
+	if(x.adjacentMines > 0 && item.hasChildNodes() == false)
 	{
 	item.appendChild(number);
 	}
@@ -295,6 +307,7 @@
 				}
 			}
 		}
+		await CheckIfWon();
 	}
 	private async Task GetFieldsToReveal(string id)
 	{
@@ -327,7 +340,7 @@
 			if (neighbor == null)
 				continue;
 
-			if (!fieldsToShowUp.Contains(neighbor) && !neighbor.IsMine && neighbor.State == Field.FieldState.Hidden)
+			if (neighbor != null && !fieldsToShowUp.Contains(neighbor) && !neighbor.IsMine && neighbor.State == Field.FieldState.Hidden)
 			{
 				fieldsToShowUp.Add(neighbor);
 
@@ -353,13 +366,14 @@
 	private async Task SetAFlag(string id)
 	{
 		var clicked = fields.FirstOrDefault(x => x.ID == id);
-		await JS.InvokeVoidAsync("setAsFlagged", clicked.ID);
 		if (clicked.State == Field.FieldState.Flagged)
 		{
 			fields.FirstOrDefault(x => x.ID == id).State = Field.FieldState.Hidden;
+			await JS.InvokeVoidAsync("setAsFlagged", clicked.ID);
 		}
-		else
+		else if(clicked.State == Field.FieldState.Hidden)
 		{
+			await JS.InvokeVoidAsync("setAsFlagged", clicked.ID);
 			fields.FirstOrDefault(x => x.ID == id).State = Field.FieldState.Flagged;
 		}
 		Console.WriteLine(fields);
@@ -388,9 +402,18 @@
 				x.Xindex == clickField.Xindex + dx &&
 				x.Yindex == clickField.Yindex + dy
 			);
+			if(neighbour == null)
+			{
+				continue;
+			}
 			if(neighbour.State == Field.FieldState.Hidden)
 			{
 				fieldsToShowUp.Add(neighbour);
+				if (neighbour.AdjacentMines < 1 && !neighbour.IsMine)
+				{
+					fieldsToShowUp.Add(neighbour);
+					GetFieldsToReveal(neighbour.ID);
+				}
 			}
 		}
 	}
@@ -420,5 +443,12 @@
 			}
 		}
 		return nearbyMinesCount;
+	}
+	private async Task CheckIfWon()
+	{
+		if(fields.Where(x => x.State == Field.FieldState.Hidden).Count() == 0)
+		{
+			//gg u won
+		}
 	}
 }
