@@ -125,11 +125,11 @@
 	item.style.backgroundColor = "gray";
 	if((xIndex + yIndex) % 2 == 0)
 	{
-	item.style.backgroundColor = "gray";
+	item.style.backgroundColor = "#808080";
 	}
 	else
 	{
-	item.style.backgroundColor = "lightgray";
+	item.style.backgroundColor = "#9e9e9e";
 	}
 	number.innerText = x.adjacentMines
 	number.classList.add("AdjectedMinesText");
@@ -166,6 +166,10 @@
 	}
 	});
 	};
+	window.GameWon = function() 
+	{
+	alert("Congratulations! You won the game!");
+	}
 </script>
 
 
@@ -180,11 +184,15 @@
 	List<Field> fields = new List<Field>();
 	List<Field> bombFields = new List<Field>();
 	List<Field> fieldsToShowUp = new List<Field>();
+	private int minesCount = 0;
 	private Difficulty selectedDifficulty = Difficulty.NotSelected;
+	private bool GameStarted = false;
 	private async Task StartGame(Difficulty difficulty)
 	{
 		selectedDifficulty = difficulty;
 		fields.Clear();
+		bombFields.Clear();
+		GameStarted = false;
 
 		switch (difficulty)
 		{
@@ -192,25 +200,28 @@
 				fields = Enumerable.Range(1, 11).SelectMany(k => Enumerable.Range(1, 11).Select(i => 
 					new Field {ID = k + "-" + i, Xindex = k, Yindex = i, IsMine = false, State = Field.FieldState.Hidden }))
 				.ToList();
-				CreateBombs(difficulty, fields);
 				break;
 			case Difficulty.Medium:
 				fields = Enumerable.Range(1, 12).SelectMany(k => Enumerable.Range(1, 12).Select(i => 
 					new Field { ID = k + "-" + i, Xindex = k, Yindex = i, IsMine = false, State = Field.FieldState.Hidden }))
 				.ToList();
-				CreateBombs(difficulty, fields);
 				break;
 			case Difficulty.Hard:
 				fields = Enumerable.Range(1, 14).SelectMany(k => Enumerable.Range(1, 14).Select(i => 
 					new Field { ID = k + "-" + i, Xindex = k, Yindex = i, IsMine = false, State = Field.FieldState.Hidden }))
 				.ToList();
-				CreateBombs(difficulty, fields);
 				break;
 			default:
 				break;
 		}
-		FindMinesInAdjacentFields();
 
+		StateHasChanged();
+		await Task.Yield();
+
+		CreateBombs(difficulty, fields);
+
+		FindMinesInAdjacentFields();
+		GameStarted = true; 
 	}
 	private void CreateBombs(Difficulty difficulty, List<Field> filds)
 	{
@@ -231,6 +242,7 @@
 				maxIndex = 15; // 14 columns and 14 rows
 				break;
 		}
+		minesCount = bombCount; // Store the mine count for later use
 		var random = new Random();
 		while (bombFields.Count < bombCount)
 		{
@@ -268,46 +280,50 @@
 	}
 	private async Task ButtonClicked(string id)
 	{
-		var clickedField = fields.FirstOrDefault(x => x.ID == id);
-		if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines > 0 && !clickedField.IsMine)
+		if(GameStarted)
 		{
-			fieldsToShowUp.Add(clickedField);
-			await RevealFields();
-		}
-		else if (clickedField.State == Field.FieldState.Hidden && clickedField.IsMine)
-		{
-			GameLost();
-		}
-		else if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines == 0 && !clickedField.IsMine)
-		{
-			fieldsToShowUp.Add(clickedField);
-			await GetFieldsToReveal(clickedField.ID);
-			await RevealFields();
-		}
-		else if (clickedField.State == Field.FieldState.Revealed && clickedField.AdjacentMines > 0)
-		{
-			if(FindeNearbyMines(clickedField) == clickedField.AdjacentMines)
+			var clickedField = fields.FirstOrDefault(x => x.ID == id);
+			if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines > 0 && !clickedField.IsMine)
 			{
-				bool loose = false;
-				GetNeighbourFieldsToShowUp(clickedField);
-				foreach (var x in fieldsToShowUp)
+				fieldsToShowUp.Add(clickedField);
+				await RevealFields();
+			}
+			else if (clickedField.State == Field.FieldState.Hidden && clickedField.IsMine)
+			{
+				GameStarted = false;
+				GameLost();
+			}
+			else if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines == 0 && !clickedField.IsMine)
+			{
+				fieldsToShowUp.Add(clickedField);
+				await GetFieldsToReveal(clickedField.ID);
+				await RevealFields();
+			}
+			else if (clickedField.State == Field.FieldState.Revealed && clickedField.AdjacentMines > 0)
+			{
+				if (FindeNearbyMines(clickedField) == clickedField.AdjacentMines)
 				{
-					if (x.IsMine)
+					bool loose = false;
+					GetNeighbourFieldsToShowUp(clickedField);
+					foreach (var x in fieldsToShowUp)
 					{
-						loose = true;
+						if (x.IsMine)
+						{
+							loose = true;
+						}
+					}
+					if (loose)
+					{
+						GameLost();
+					}
+					else
+					{
+						await RevealFields();
 					}
 				}
-				if (loose)
-				{
-					GameLost();
-				}
-				else
-				{
-					await RevealFields();
-				}
 			}
+			await CheckIfWon();
 		}
-		await CheckIfWon();
 	}
 	private async Task GetFieldsToReveal(string id)
 	{
@@ -446,9 +462,13 @@
 	}
 	private async Task CheckIfWon()
 	{
-		if(fields.Where(x => x.State == Field.FieldState.Hidden).Count() == 0)
+		if(fields.Where(x => x.State == Field.FieldState.Hidden).Count() == 0 && 
+		fields.Where(x => x.State == Field.FieldState.Flagged).Count() == fields.Where(x => x.IsMine == true).Count() &&
+		minesCount == fields.Where(x => x.IsMine == true).Count())
 		{
-			//gg u won
+			GameStarted = false;
+			await JS.InvokeVoidAsync("GameWon");
+			selectedDifficulty = Difficulty.NotSelected;
 		}
 	}
 }
