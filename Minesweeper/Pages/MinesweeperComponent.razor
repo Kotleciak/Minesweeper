@@ -1,13 +1,13 @@
 ﻿@inject IJSRuntime JS
-<h3>MinesweeperComponent</h3>
+@* <h1 id="KotleciakHeadline">Kotleciak's Minesweeper</h1> *@
 @switch (selectedDifficulty)
 {
 	case Difficulty.NotSelected:
-		<div>
-			<h3>Select difficulty</h3>
-			<button @onclick="() => StartGame(Difficulty.Easy)">easy</button>
-			<button @onclick="() => StartGame(Difficulty.Medium)">medium</button>
-			<button @onclick="() => StartGame(Difficulty.Hard)">hard</button>
+		<div id="SelectDifficultyContainer">
+			<h3 id="SelectDifficultyTitle">Select difficulty</h3>
+			<button @onclick="() => StartGame(Difficulty.Easy)" class="SelectDifficultyBtn">easy</button>
+			<button @onclick="() => StartGame(Difficulty.Medium)" class="SelectDifficultyBtn">medium</button>
+			<button @onclick="() => StartGame(Difficulty.Hard)" class="SelectDifficultyBtn">hard</button>
 		</div>
 		break;
 	case Difficulty.Easy:
@@ -92,6 +92,7 @@
 		</div>
 		break;
 }
+<audio id="sound" style="display: none" src="/explosion_effect.mp3" />
 <script>
 	window.setAsFlagged = function(ID) {
 	event.preventDefault(); // Prevent the default context menu from appearing
@@ -108,8 +109,18 @@
 	document.getElementById(ID).appendChild(image);
 	}
 	}
-	window.GameLost = function() {
-	alert("You lost the game!");
+	window.GameLost = function(id) {
+		let sound = document.getElementById("sound");
+		let item = document.getElementById(id);
+		let image = document.createElement("img");
+		image.src = "/Bomb.png";
+		image.style.width = "30px"; 
+		image.style.height = "30px";
+		item.appendChild(image);
+		sound.play();
+		setTimeout(function() {
+			alert("You lost the game!");
+		}, 500);
 	}
 	window.revealFields = function(list) {
 	console.log("Otrzymano listę:", list);
@@ -291,7 +302,7 @@
 			else if (clickedField.State == Field.FieldState.Hidden && clickedField.IsMine)
 			{
 				GameStarted = false;
-				GameLost();
+				await GameLost(id);
 			}
 			else if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines == 0 && !clickedField.IsMine)
 			{
@@ -314,7 +325,7 @@
 					}
 					if (loose)
 					{
-						GameLost();
+						await GameLost(id);
 					}
 					else
 					{
@@ -378,6 +389,7 @@
 			fields.FirstOrDefault(x => x.ID == field.ID).State = Field.FieldState.Revealed;
 		}
 		fieldsToShowUp.Clear();
+		await CheckIfWon();
 	}
 	private async Task SetAFlag(string id)
 	{
@@ -394,9 +406,10 @@
 		}
 		Console.WriteLine(fields);
 	}
-	private void GameLost()
+	private async Task GameLost(string id)
 	{
-		JS.InvokeVoidAsync("GameLost");
+		await JS.InvokeVoidAsync("GameLost", id);
+		await Task.Delay(500);
 		selectedDifficulty = Difficulty.NotSelected;
 	}
 	private void GetNeighbourFieldsToShowUp(Field clickField)
