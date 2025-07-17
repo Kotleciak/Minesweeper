@@ -95,19 +95,22 @@
 <audio id="sound" style="display: none" src="/explosion_effect.mp3" />
 <script>
 	window.setAsFlagged = function(ID) {
-	event.preventDefault(); // Prevent the default context menu from appearing
-	if(document.getElementById(ID).hasChildNodes())
-	{
-	document.getElementById(ID).innerHTML = "";
-	}
-	else
-	{
-	let image = document.createElement("img");
-	image.src = "/Flag.png";
-	image.style.width = "30px"; // Set the width of the flag image
-	image.style.height = "30px"; // Set the height of the flag image
-	document.getElementById(ID).appendChild(image);
-	}
+		event.preventDefault(); // Prevent the default context menu from appearing
+		if(document.getElementById(ID).hasChildNodes())
+		{
+			document.getElementById(ID).innerHTML = "";
+		}
+		else
+		{
+			let image = document.createElement("img");
+			image.src = "/Flag.png";
+			image.style.width = "30px"; // Set the width of the flag image
+			image.style.height = "30px"; // Set the height of the flag image
+			document.getElementById(ID).appendChild(image);
+			let sound = document.getElementById("sound");
+			sound.src = "/flag_planting_sound.mp3"
+			sound.play();
+		}
 	}
 	window.GameLost = function(id) {
 		let sound = document.getElementById("sound");
@@ -117,6 +120,7 @@
 		image.style.width = "30px"; 
 		image.style.height = "30px";
 		item.appendChild(image);
+		sound.src = "/explosion_effect.mp3"
 		sound.play();
 		setTimeout(function() {
 			alert("You lost the game!");
@@ -179,7 +183,12 @@
 	};
 	window.GameWon = function() 
 	{
-	alert("Congratulations! You won the game!");
+		let sound = document.getElementById("sound");
+		sound.src = "/victory_sound.mp3"
+		sound.play();
+		setTimeout(function() {
+			alert("Congratulations! You won the game!");
+		}, 300);
 	}
 </script>
 
@@ -333,7 +342,6 @@
 					}
 				}
 			}
-			await CheckIfWon();
 		}
 	}
 	private async Task GetFieldsToReveal(string id)
@@ -404,7 +412,7 @@
 			await JS.InvokeVoidAsync("setAsFlagged", clicked.ID);
 			fields.FirstOrDefault(x => x.ID == id).State = Field.FieldState.Flagged;
 		}
-		Console.WriteLine(fields);
+		await CheckIfWon();
 	}
 	private async Task GameLost(string id)
 	{

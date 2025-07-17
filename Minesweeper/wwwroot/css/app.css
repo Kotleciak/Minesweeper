@@ -1,6 +1,6 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: #f8f9fa;
+    background-image: url('/MinesweeperBackground.png')
 }
 
 h1:focus {
