@@ -1,5 +1,8 @@
 ﻿@inject IJSRuntime JS
-@* <h1 id="KotleciakHeadline">Kotleciak's Minesweeper</h1> *@
+@if(selectedDifficulty == Difficulty.NotSelected)
+{
+	<h1 id="KotleciakHeadline">Kotleciak's Minesweeper</h1>
+}
 @switch (selectedDifficulty)
 {
 	case Difficulty.NotSelected:
@@ -93,6 +96,17 @@
 		break;
 }
 <audio id="sound" style="display: none" src="/explosion_effect.mp3" />
+@if(selectedDifficulty != Difficulty.NotSelected)
+{
+	<div id="GameInfo">
+		<img src="/LeftClickMinesweeper.png" class="MouseImage"/>
+		<span class="MouseText">To reveal field</span>
+		<img src="/RightClickMinesweeper.png" class="MouseImage" />
+		<span class="MouseText">To set a flag</span>
+	</div>
+	<a id="HelpButton" href="https://www.youtube.com/watch?v=dvvrOeITzG8" title="Random Minesweeper tutorial found on youtube" target="_blank">?</a>
+}
+
 <script>
 	window.setAsFlagged = function(ID) {
 		event.preventDefault(); // Prevent the default context menu from appearing
@@ -107,19 +121,27 @@
 			image.style.width = "30px"; // Set the width of the flag image
 			image.style.height = "30px"; // Set the height of the flag image
 			document.getElementById(ID).appendChild(image);
-			let sound = document.getElementById("sound");
-			sound.src = "/flag_planting_sound.mp3"
-			sound.play();
 		}
+		let sound = document.getElementById("sound");
+		sound.src = "/flag_planting_sound.mp3"
+		sound.play();
 	}
-	window.GameLost = function(id) {
+	window.GameLost = function(id, mines) {
 		let sound = document.getElementById("sound");
 		let item = document.getElementById(id);
-		let image = document.createElement("img");
-		image.src = "/Bomb.png";
-		image.style.width = "30px"; 
-		image.style.height = "30px";
-		item.appendChild(image);
+
+		mines.forEach(x => {
+			let mineItem = document.getElementById(x.id);
+			if(mineItem && mineItem.hasChildNodes() == false)
+			{
+				let mineImage = document.createElement("img");
+				mineImage.src = "/Bomb.png";
+				mineImage.style.width = "30px";
+				mineImage.style.height = "30px";
+				mineItem.appendChild(mineImage);
+			}
+		});
+
 		sound.src = "/explosion_effect.mp3"
 		sound.play();
 		setTimeout(function() {
@@ -416,9 +438,13 @@
 	}
 	private async Task GameLost(string id)
 	{
-		await JS.InvokeVoidAsync("GameLost", id);
+		List<Field> minesToReveal = bombFields.Where(x => x.State == Field.FieldState.Hidden).ToList();
+		await JS.InvokeVoidAsync("GameLost", id, minesToReveal);
 		await Task.Delay(500);
 		selectedDifficulty = Difficulty.NotSelected;
+		fields.Clear();
+		bombFields.Clear();
+		fieldsToShowUp.Clear();
 	}
 	private void GetNeighbourFieldsToShowUp(Field clickField)
 	{

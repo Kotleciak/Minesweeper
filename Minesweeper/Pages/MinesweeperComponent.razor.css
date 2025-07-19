@@ -39,7 +39,7 @@
     }
 #SelectDifficultyTitle {
     font-family: 'Jersey 20';
-    font-size: 2.5em;
+    font-size: 3.7em;
     color: #3c992e;
     margin-bottom: 20px;
 }
@@ -48,10 +48,56 @@
     padding-left: 8%;
     padding-right: 8%;
 }
-.KotleciakHeadline {
+#KotleciakHeadline {
     font-family: 'Jersey 20';
-    font-size: 3.2em;
-    color: #3c992e;
+    font-size: 5.2em;
+    color: white;
     text-align: center;
     margin-top: 20px;
 }
+#GameInfo {
+    position: absolute;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    max-width: fit-content;
+    border: solid 2px #eef5ed;
+    background-color: #064f01;
+    border-radius: 10px;
+    padding-left: 10%;
+    padding-right: 10%;
+}
+.MouseImage {
+    height: 40px;
+    width: 40px;
+    display: inline-block;
+}
+.MouseText {
+    font-family: 'Jersey 20';
+    font-size: 1.5em;
+    color: white;
+}
+#HelpButton {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: #064f01;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.2em;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    vertical-align: middle;
+    padding-top: 2.4px;
+    text-decoration: none;
+}
+#HelpButton:visited{
+    color: white;
+}
+    #HelpButton:hover {
+        color: white;
+        background-color: #043801;
+    }
