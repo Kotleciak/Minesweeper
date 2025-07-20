@@ -149,9 +149,7 @@
 		}, 500);
 	}
 	window.revealFields = function(list) {
-	console.log("Otrzymano listę:", list);
 	list.forEach(x => {
-	console.log("Sprawdzam ID:", x.id);
 	let item = document.getElementById(x.id);
 	let number = document.createElement("p");
 	if (item) {
@@ -229,12 +227,14 @@
 	private int minesCount = 0;
 	private Difficulty selectedDifficulty = Difficulty.NotSelected;
 	private bool GameStarted = false;
+	private bool FirstClick;
 	private async Task StartGame(Difficulty difficulty)
 	{
 		selectedDifficulty = difficulty;
 		fields.Clear();
 		bombFields.Clear();
 		GameStarted = false;
+		FirstClick = true;
 
 		switch (difficulty)
 		{
@@ -284,7 +284,7 @@
 				maxIndex = 15; // 14 columns and 14 rows
 				break;
 		}
-		minesCount = bombCount; // Store the mine count for later use
+		minesCount = bombCount;
 		var random = new Random();
 		while (bombFields.Count < bombCount)
 		{
@@ -316,7 +316,6 @@
 			if (fields.Any(x => x.Xindex == i.Xindex - 1 && x.Yindex == i.Yindex && x.IsMine)) { count++; }
 
 			i.AdjacentMines = count;
-			Console.WriteLine($"Field {i.ID} has {i.AdjacentMines} adjacent mines.");
 			count = 0; // reset count for next field
 		}
 	}
@@ -325,6 +324,16 @@
 		if(GameStarted)
 		{
 			var clickedField = fields.FirstOrDefault(x => x.ID == id);
+			if(FirstClick)
+			{
+				FirstClick = false;
+				if(clickedField.IsMine)
+				{
+					fields.FirstOrDefault(x => x.ID == id).IsMine = false; // remove mine from clicked field
+					FindMinesInAdjacentFields(); // recalculate adjacent mines for all fields
+					minesCount--; // decrease mine count since we removed one mine
+				}
+			}
 			if (clickedField.State == Field.FieldState.Hidden && clickedField.AdjacentMines > 0 && !clickedField.IsMine)
 			{
 				fieldsToShowUp.Add(clickedField);
